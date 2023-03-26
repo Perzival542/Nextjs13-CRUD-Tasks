@@ -1,34 +1,54 @@
 "use client"
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import {v4 as uuid} from "uuid";
 
 export const TaskContext = createContext();
 
 export const useTasks = () => {
     const context = useContext(TaskContext);
     if(!context) throw new Error('useTasks must use within a provider');
-    return context
-}
+    return context;
+};
 
 export const TaskProvider = ({ children }) => {
-    const tasks = [{
-        id: 1,
-        title: "my first task",
-        description: "some task"
-    },
-    {
-        id: 2,
-        title: "my second task",
-        description: "some second task"
-    },
-    {
-        id: 3,
-        title: "my third task",
-        description: "some third task"
-    },]
+    const [tasks, setTasks] = useState(() => {
+        const item = localStorage.getItem("tasks");
+        const tasks = JSON.parse(item);
+        if (tasks.length > 0) {
+            return tasks;
+        }
+        return []
+    })
+
+    useEffect(() => {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    }, [tasks])
+
+    const createTask = (title, description) =>
+        setTasks([...tasks, {
+            title,
+            description,
+            id: uuid()
+        },
+        ]);
+
+    const deleteTasks = (id) =>
+        setTasks([...tasks.filter(task => task.id !== id)])
+
+    const updateTask = (id, newData) =>
+        setTasks([
+            ...tasks.map((task) =>
+                task.id === id ? {...task, ...newData} : task
+            ),
+        ]);
 
     return (
         <TaskContext.Provider value={{
-            tasks,}}
+            tasks,
+            createTask,
+            deleteTasks,
+            updateTask
+        }}
         >
             {children}
         </TaskContext.Provider>
